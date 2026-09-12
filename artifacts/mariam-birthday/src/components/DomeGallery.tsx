@@ -47,7 +47,7 @@ function buildItems(images: DomeGalleryImage[], segments: number): Tile[] {
   const columns = Array.from({ length: segments }, (_, index) => -37 + index * 2);
   const coordinates = columns.flatMap((x, column) => {
     const rows = column % 2 === 0 ? [-4, -2, 0, 2, 4] : [-3, -1, 1, 3, 5];
-    return rows.map((y) => ({ x, y, sizeX: 2, sizeY: 2, column }));
+    return rows.map((y, rowIdx) => ({ x, y, sizeX: 2, sizeY: 2, column, row: rowIdx }));
   });
 
   const normalized = images.map((image) =>
@@ -57,22 +57,44 @@ function buildItems(images: DomeGalleryImage[], segments: number): Tile[] {
   );
 
   if (normalized.length === 0) {
-    return coordinates.map(({ column: _column, ...coordinate }) => ({
+    return coordinates.map(({ column: _column, row: _row, ...coordinate }) => ({
       ...coordinate,
       src: '',
       alt: '',
     }));
   }
 
-  return coordinates.map(({ column: _column, ...coordinate }, index) => {
-    const current = normalized[index % normalized.length];
-    const previous = normalized[(index - 1 + normalized.length) % normalized.length];
-    const alternate =
-      current.src === previous.src
-        ? normalized[(index + 1) % normalized.length]
-        : current;
+  // Smart spatial distribution: ensure NO adjacent tile (column ±1 or row ±1) has the same image
+  const total = normalized.length;
+  const gridAssignments: Map<string, number> = new Map();
 
-    return { ...coordinate, src: alternate.src, alt: alternate.alt };
+  return coordinates.map(({ column, row, ...coordinate }) => {
+    // Collect forbidden indices from previously assigned neighboring tiles
+    const forbidden = new Set<number>();
+    for (let dc = -2; dc <= 0; dc++) {
+      for (let dr = -2; dr <= 2; dr++) {
+        if (dc === 0 && dr >= 0) continue;
+        const key = `${column + dc}:${row + dr}`;
+        if (gridAssignments.has(key)) {
+          forbidden.add(gridAssignments.get(key)!);
+        }
+      }
+    }
+
+    // Ideal coprime stride to scatter photos evenly across 2D space
+    let candidate = ((column * 7) + (row * 13) + ((column % 3) * 5)) % total;
+    if (candidate < 0) candidate += total;
+
+    // If candidate is too close to a neighbor, step to the next clean slot
+    let tries = 0;
+    while (forbidden.has(candidate) && tries < total) {
+      candidate = (candidate + 1) % total;
+      tries++;
+    }
+
+    gridAssignments.set(`${column}:${row}`, candidate);
+    const chosen = normalized[candidate];
+    return { ...coordinate, src: chosen.src, alt: chosen.alt };
   });
 }
 
@@ -289,6 +311,33 @@ export default function DomeGallery({
     }, enlargeTransitionMs);
   };
 
+  const currentItem = opened !== null ? items[opened % items.length] : null;
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (opened === null) return;
+    setOpened((prev) => (prev! - 1 + items.length) % items.length);
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (opened === null) return;
+    setOpened((prev) => (prev! + 1) % items.length);
+  };
+
+  useEffect(() => {
+    const handleKeyNav = (event: KeyboardEvent) => {
+      if (opened === null) return;
+      if (event.key === 'ArrowLeft') {
+        setOpened((prev) => (prev! - 1 + items.length) % items.length);
+      } else if (event.key === 'ArrowRight') {
+        setOpened((prev) => (prev! + 1) % items.length);
+      }
+    };
+    window.addEventListener('keydown', handleKeyNav);
+    return () => window.removeEventListener('keydown', handleKeyNav);
+  }, [opened, items.length]);
+
   return (
     <div
       ref={rootRef}
@@ -301,7 +350,7 @@ export default function DomeGallery({
           '--tile-radius': imageBorderRadius,
           '--enlarge-radius': openedImageBorderRadius,
           '--image-filter': grayscale ? 'grayscale(1)' : 'none',
-          } as CSSProperties
+        } as CSSProperties
       }
     >
       <main ref={mainRef} className="sphere-main" aria-label="Shared memories">
@@ -318,6 +367,7 @@ export default function DomeGallery({
                     '--offset-y': item.y,
                     '--item-size-x': item.sizeX,
                     '--item-size-y': item.sizeY,
+                    '--float-delay': `${(index % 8) * 0.45}s`,
                   } as React.CSSProperties
                 }
               >
@@ -337,47 +387,78 @@ export default function DomeGallery({
         <div className="overlay overlay--blur" />
         <div className="edge-fade edge-fade--top" />
         <div className="edge-fade edge-fade--bottom" />
+      </main>
+
+      {/* Crystal-Clear Full-Screen Modal Lightbox */}
+      {opened !== null && currentItem && (
         <div
-          className={`viewer ${opened !== null ? 'is-open' : ''}`}
-          ref={viewerRef}
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300"
           role="dialog"
           aria-modal="true"
-          aria-label="Enlarged shared memory"
-          aria-hidden={opened === null}
+          aria-label="Enlarged memory photo"
         >
-          <button
-            type="button"
-            className="scrim"
-            aria-label="Close enlarged memory"
+          {/* Frosted Scrim Backdrop */}
+          <div
+            className="absolute inset-0 bg-[#200D18]/85 backdrop-blur-xl transition-opacity"
             onClick={() => setOpened(null)}
+            aria-hidden="true"
           />
-          <div className="frame" ref={frameRef} />
-          {opened !== null && (
-            <figure
-              className="enlarge"
-              style={{
-                width: openedImageWidth,
-                height: openedImageHeight,
-                transitionDuration: `${enlargeTransitionMs}ms`,
-              }}
-            >
-               <img
-                src={items[opened % items.length]?.src}
-                alt={items[opened % items.length]?.alt || 'A shared memory'}
-              />
+
+          {/* Lightbox Container */}
+          <div className="relative z-10 max-w-3xl w-full flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+            {/* Top Bar with Counter and Close Button */}
+            <div className="w-full flex items-center justify-between mb-3 px-2 text-[#FFD4B2]">
+              <span className="font-mono text-xs tracking-widest uppercase opacity-90">
+                ✦ Memory {((opened % items.length) + 1)} / {items.length}
+              </span>
               <button
                 type="button"
-                className="enlarge-close"
-                 ref={closeButtonRef}
-                aria-label="Close enlarged memory"
+                ref={closeButtonRef}
                 onClick={() => setOpened(null)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#3B1B2A]/90 hover:bg-[#FFD4B2] hover:text-[#27141E] border border-[#FBB3BF]/30 text-xs font-mono tracking-wider uppercase transition-all shadow-lg"
+                aria-label="Close enlarged memory"
               >
-                Close
+                <span>✕</span>
+                <span>Close</span>
               </button>
-            </figure>
-          )}
+            </div>
+
+            {/* Crisp High-Res Image Frame */}
+            <div className="relative group max-h-[76vh] flex items-center justify-center overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-[#FFD4B2]/40 bg-[#1A0A13] shadow-2xl shadow-black/80">
+              <img
+                src={currentItem.src}
+                alt={currentItem.alt || 'Mariam shared memory'}
+                className="w-auto h-auto max-h-[74vh] max-w-[88vw] sm:max-w-2xl object-contain block rounded-2xl select-none"
+              />
+
+              {/* Navigation Arrows */}
+              <button
+                type="button"
+                onClick={handlePrev}
+                aria-label="Previous memory"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#27141E]/80 hover:bg-[#FFD4B2] hover:text-[#27141E] text-white border border-[#FBB3BF]/40 flex items-center justify-center text-lg transition-all shadow-xl opacity-80 hover:opacity-100 hover:scale-105"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                aria-label="Next memory"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#27141E]/80 hover:bg-[#FFD4B2] hover:text-[#27141E] text-white border border-[#FBB3BF]/40 flex items-center justify-center text-lg transition-all shadow-xl opacity-80 hover:opacity-100 hover:scale-105"
+              >
+                →
+              </button>
+            </div>
+
+            {/* Bottom Caption Pill */}
+            {currentItem.alt && (
+              <div className="mt-3 px-5 py-2 rounded-full bg-[#361928]/80 border border-[#FBB3BF]/30 text-[#FBE1D5] font-serif text-lg tracking-wide shadow-md text-center max-w-xl">
+                {currentItem.alt}
+              </div>
+            )}
+          </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }
