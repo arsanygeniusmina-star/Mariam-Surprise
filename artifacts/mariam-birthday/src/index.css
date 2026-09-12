@@ -443,18 +443,35 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--palette-peach);
 .letter-heading h2 { font-size: clamp(3.2rem, 13vw, 7rem); line-height: .82; color: var(--ink); margin: 1rem 0 0; }
 .letter-heading p { max-width: 12rem; font: .65rem/1.6 var(--app-font-mono); color: var(--ink-soft); text-transform: uppercase; letter-spacing: .12em; }
 .letter-paper {
-  position: relative; background: #FFF9F4; padding: 3rem 2.2rem;
-  box-shadow: 1.5rem 1.5rem 0 rgba(74,36,51,.15), 0 20px 40px rgba(0,0,0,.06);
-  transform: rotate(-1deg); max-width: 44rem; margin-left: auto; border-radius: .75rem;
-  border: 1px solid rgba(237,165,167,.4);
+  position: relative; background: #FFFDF9; padding: 3.5rem 2.8rem;
+  box-shadow: 0 25px 60px rgba(74,36,51,.12), 0 2px 8px rgba(74,36,51,.04);
+  transform: rotate(-0.75deg); max-width: 44rem; margin-left: auto; border-radius: 1.25rem;
+  border: 1px solid rgba(237,165,167,.45);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+.letter-paper:hover {
+  transform: rotate(0deg) translateY(-3px);
+  box-shadow: 0 32px 70px rgba(74,36,51,.16), 0 4px 12px rgba(74,36,51,.06);
 }
 .letter-paper::before {
-  content: "M"; position: absolute; right: 1.75rem; top: 1.25rem;
-  color: var(--palette-coral); font: italic 3.6rem var(--app-font-serif); opacity: .75;
+  content: "M"; position: absolute; right: 2rem; top: 1.8rem;
+  width: 3.2rem; height: 3.2rem; border-radius: 50%;
+  display: grid; place-items: center;
+  background: radial-gradient(circle, rgba(251,179,191,.25) 0%, rgba(237,165,167,.12) 100%);
+  border: 1px solid rgba(237,165,167,.55);
+  color: var(--palette-coral); font: italic 1.8rem var(--app-font-serif);
+  box-shadow: inset 0 1px 3px rgba(255,255,255,.8), 0 2px 8px rgba(237,165,167,.2);
 }
-.letter-paper::after { content: ""; position: absolute; left: 0; top: 1.5rem; bottom: 1.5rem; width: 4px; background: var(--palette-coral); border-radius: 2px; }
-.letter-paper p { margin: 0 0 1.5rem; padding-left: .5rem; font-family: var(--app-font-serif); font-size: clamp(1.4rem, 4.8vw, 2.2rem); line-height: 1.15; color: var(--ink); }
-.letter-sign { color: var(--palette-coral) !important; font-size: 1.05rem !important; margin-top: 3.2rem !important; font-family: var(--app-font-mono) !important; letter-spacing: .08em; }
+.letter-paper p {
+  margin: 0 0 1.6rem; font-family: var(--app-font-serif);
+  font-size: clamp(1.2rem, 3.2vw, 1.65rem); line-height: 1.65;
+  color: var(--ink); letter-spacing: -0.01em;
+}
+.letter-sign {
+  color: var(--palette-coral) !important; font-size: 1.05rem !important;
+  margin-top: 3rem !important; font-family: var(--app-font-mono) !important;
+  letter-spacing: .08em; line-height: 1.6 !important;
+}
 
 /* MEMORIES ACCORDION SCENE (Palette: Warm Peach #FFD4B2 + Coral #EDA5A7) */
 .memories-scene {
@@ -674,8 +691,14 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--palette-peach);
 .last-thing:active {
   transform: translateY(0) scale(0.98);
 }
-.secret { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 1s ease, opacity .8s ease, padding 1s ease; }
-.secret.revealed { max-height: 36rem; opacity: 1; padding-top: 4.5rem; }
+.secret { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.8s ease, opacity 0.6s ease, padding 0.8s ease, margin 0.8s ease; }
+.secret.revealed {
+  max-height: 42rem; opacity: 1;
+  padding: 3.5rem 2.2rem; margin: 2.5rem auto 0;
+  max-width: 40rem; background: rgba(255,255,255,.75);
+  backdrop-filter: blur(16px); border: 1px solid rgba(237,165,167,.5);
+  border-radius: 1.5rem; box-shadow: 0 20px 50px rgba(74,36,51,.08);
+}
 .secret h3 { font: 400 clamp(2.8rem, 12vw, 6.5rem)/.85 var(--app-font-serif); margin: 0 0 1.5rem; }
 .secret h3 em { color: var(--palette-coral); }
 .secret p { color: var(--palette-coral); font: italic 1.35rem/1.3 var(--app-font-serif); }

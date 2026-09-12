@@ -26,7 +26,7 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   build: {
-    outDir: path.resolve(import.meta.dirname, '../../dist'),
+    outDir: process.env.BUILD_OUT_DIR || (process.cwd() === import.meta.dirname ? path.resolve(import.meta.dirname, 'dist') : path.resolve(import.meta.dirname, '../../dist')),
     emptyOutDir: true,
   },
   server: {
