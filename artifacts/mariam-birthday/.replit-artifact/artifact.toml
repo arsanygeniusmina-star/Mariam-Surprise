@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Mariam Birthday Experience"
+description = "A cinematic, mobile-first interactive birthday journey for Mariam, built around real personal photographs, tactile gallery moments, a make-a-wish interaction, and a hidden final surprise."
+version = "1.0.0"
+id = "artifacts/mariam-birthday"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25786
+
+[services.development]
+run = "pnpm --filter @workspace/mariam-birthday run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mariam-birthday", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/mariam-birthday/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25786"
+BASE_PATH = "/"
