@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
@@ -11,6 +12,18 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    {
+      name: 'sync-dist',
+      closeBundle() {
+        const rootDist = path.resolve(import.meta.dirname, '../../dist');
+        const localDist = path.resolve(import.meta.dirname, 'dist');
+        try {
+          if (fs.existsSync(rootDist)) {
+            fs.cpSync(rootDist, localDist, { recursive: true });
+          }
+        } catch {}
+      },
+    },
   ],
   resolve: {
     alias: {
