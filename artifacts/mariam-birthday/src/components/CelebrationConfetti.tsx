@@ -14,12 +14,13 @@ interface Particle {
 }
 
 const PALETTE = [
-  '#FBB3BF', // Soft Rose
-  '#FFD4B2', // Apricot Peach
-  '#F2EEB6', // Butter Yellow
-  '#FBE1D5', // Alabaster Cream
-  '#EDA5A7', // Warm Coral
-  '#FFF5EB', // Starlight White
+  '#FF4B7E', // Birthday Magenta Rose
+  '#FFB074', // Shimmering Peach
+  '#FFD152', // Birthday Celebration Gold
+  '#FFE680', // Champagne Shimmer
+  '#F85E87', // Bright Berry Pink
+  '#9BE7FF', // Festive Sky Sparkle
+  '#FFF5EB', // Birthday Frosting White
 ];
 
 export function CelebrationConfetti({ trigger }: { trigger?: number }) {
@@ -32,20 +33,22 @@ export function CelebrationConfetti({ trigger }: { trigger?: number }) {
     if (!canvas) return;
     const w = canvas.width;
 
-    const types: Particle['type'][] = ['rect', 'circle', 'star', 'heart'];
+    // Half of all particles are romantic celebration hearts
+    const types: Particle['type'][] = ['heart', 'heart', 'star', 'circle', 'rect'];
     const newParticles: Particle[] = [];
 
     for (let i = 0; i < count; i++) {
+      const type = types[Math.floor(Math.random() * types.length)];
       newParticles.push({
         x: Math.random() * w,
         y: -10 - Math.random() * 40,
-        size: 7 + Math.random() * 10,
+        size: type === 'heart' ? 12 + Math.random() * 14 : 7 + Math.random() * 10,
         color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
-        type: types[Math.floor(Math.random() * types.length)],
+        type,
         rotation: Math.random() * 360,
-        vx: (Math.random() - 0.5) * 2.2,
-        vy: 2.2 + Math.random() * 3.8,
-        vRot: (Math.random() - 0.5) * 6,
+        vx: (Math.random() - 0.5) * 2.4,
+        vy: 2.0 + Math.random() * 3.4,
+        vRot: (Math.random() - 0.5) * 5,
         opacity: 1,
       });
     }
@@ -170,24 +173,29 @@ export function CelebrationConfetti({ trigger }: { trigger?: number }) {
   );
 }
 
-// Lightweight Ambient Floating Balloons
+// Lightweight Ambient Floating Balloons (Desktop only)
 export function AmbientFloatingBalloons() {
   return (
     <div
-      className="fixed inset-0 pointer-events-none z-10 overflow-hidden"
+      className="fixed inset-0 pointer-events-none z-10 overflow-hidden hidden md:block"
       aria-hidden="true"
-      style={{ willChange: 'transform' }}
     >
-      {/* Left side gentle floating balloon */}
-      <div className="absolute -left-6 top-[28vh] w-24 h-32 rounded-[50%_50%_50%_50%/60%_60%_40%_40%] bg-gradient-to-tr from-[#FBB3BF]/25 via-[#FFD4B2]/30 to-[#FFF5EB]/20 border border-[#FBB3BF]/20 shadow-md opacity-40 animate-[float_10s_ease-in-out_infinite]">
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-1.5 bg-[#EDA5A7]" />
-        <div className="absolute top-full left-1/2 w-0.5 h-20 bg-gradient-to-b from-[#EDA5A7]/30 to-transparent" />
+      {/* Left side gentle floating balloon - Birthday Rose */}
+      <div className="absolute -left-5 top-[25vh] w-24 h-32 rounded-[50%_50%_50%_50%/60%_60%_40%_40%] bg-gradient-to-tr from-[#FF4B7E]/30 via-[#FFB074]/35 to-[#FFF5EB]/30 border border-[#FF4B7E]/35 shadow-lg opacity-50 animate-[float_10s_ease-in-out_infinite]">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2.5 h-2 bg-[#FF4B7E] rounded-xs" />
+        <div className="absolute top-full left-1/2 w-0.5 h-24 bg-gradient-to-b from-[#FF4B7E]/40 to-transparent" />
       </div>
 
-      {/* Right side floating apricot balloon */}
-      <div className="absolute -right-8 top-[60vh] w-28 h-36 rounded-[50%_50%_50%_50%/60%_60%_40%_40%] bg-gradient-to-tr from-[#FFD4B2]/25 via-[#F2EEB6]/30 to-[#FFF5EB]/20 border border-[#FFD4B2]/20 shadow-md opacity-40 animate-[float_11s_ease-in-out_infinite_alternate_1.5s]">
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-1.5 bg-[#FFD4B2]" />
-        <div className="absolute top-full left-1/2 w-0.5 h-22 bg-gradient-to-b from-[#FFD4B2]/30 to-transparent" />
+      {/* Right side floating champagne gold balloon */}
+      <div className="absolute -right-6 top-[55vh] w-26 h-34 rounded-[50%_50%_50%_50%/60%_60%_40%_40%] bg-gradient-to-tr from-[#FFD152]/30 via-[#FFE680]/35 to-[#FFF5EB]/30 border border-[#FFD152]/35 shadow-lg opacity-50 animate-[float_12s_ease-in-out_infinite_alternate_1.5s]">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2.5 h-2 bg-[#FFD152] rounded-xs" />
+        <div className="absolute top-full left-1/2 w-0.5 h-24 bg-gradient-to-b from-[#FFD152]/40 to-transparent" />
+      </div>
+
+      {/* Top right floating warm peach celebration balloon */}
+      <div className="absolute right-[12%] top-[8vh] w-18 h-24 rounded-[50%_50%_50%_50%/60%_60%_40%_40%] bg-gradient-to-tr from-[#FFB074]/25 via-[#F85E87]/25 to-[#FFF]/25 border border-[#FFB074]/30 shadow-md opacity-40 animate-[float_9s_ease-in-out_infinite_alternate_3s]">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-2 h-1.5 bg-[#FFB074] rounded-xs" />
+        <div className="absolute top-full left-1/2 w-0.5 h-16 bg-gradient-to-b from-[#FFB074]/35 to-transparent" />
       </div>
     </div>
   );

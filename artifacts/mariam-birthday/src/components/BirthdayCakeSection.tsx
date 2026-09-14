@@ -48,7 +48,25 @@ export function BirthdayCakeSection({
 
   // Music state
   const [isMusicOn, setIsMusicOn] = useState(getIsMusicPlaying());
+  const [cakeHearts, setCakeHearts] = useState<{ id: number; x: number; y: number; color: string; size: number }[]>([]);
   const cakeRef = useRef<HTMLDivElement>(null);
+
+  const spawnCandleHearts = (candleIdx?: number) => {
+    const colors = ['#FF4B7E', '#FFB074', '#FFD152', '#F85E87', '#FFE680'];
+    const xOffsets = candleIdx !== undefined ? [37, 50, 63][candleIdx] : 50;
+    const newHearts = Array.from({ length: candleIdx !== undefined ? 4 : 10 }).map((_, i) => ({
+      id: Date.now() + Math.random() + i,
+      x: (candleIdx !== undefined ? xOffsets : 30 + Math.random() * 40) + (Math.random() * 12 - 6),
+      y: 160 + (Math.random() * 20 - 10),
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: 14 + Math.random() * 12,
+    }));
+
+    setCakeHearts((prev) => [...prev, ...newHearts]);
+    setTimeout(() => {
+      setCakeHearts((prev) => prev.filter((h) => !newHearts.some((nh) => nh.id === h.id)));
+    }, 1800);
+  };
 
   // Sync music state
   useEffect(() => {
@@ -74,6 +92,7 @@ export function BirthdayCakeSection({
 
     playPuff();
     playChime(candleIndex * 2);
+    spawnCandleHearts(candleIndex);
 
     // Smoke effect
     setSmokingCandles((prev) => new Set(prev).add(candleIndex));
@@ -106,6 +125,7 @@ export function BirthdayCakeSection({
     if (isRelighting || allCandlesOut) return;
     playPuff();
     playCelebrationChord();
+    spawnCandleHearts();
     setSmokingCandles(new Set([0, 1, 2]));
     setTimeout(() => setSmokingCandles(new Set()), 2000);
     setCandleLit([false, false, false]);
@@ -283,7 +303,7 @@ export function BirthdayCakeSection({
         {/* ARTISAN CAKE STAGE - Candles are planted directly ON TOP of the cake */}
         <div
           ref={cakeRef}
-          className="relative w-72 sm:w-80 h-72 mx-auto my-4 select-none"
+          className="relative w-[272px] sm:w-[320px] h-72 mx-auto my-4 select-none"
           aria-label={
             allCandlesOut
               ? 'The candles have been blown out'
@@ -292,7 +312,7 @@ export function BirthdayCakeSection({
         >
           {/* Gold Pedestal Stand */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 w-68 sm:w-74 h-5 rounded-full bg-gradient-to-r from-[#C27F52] via-[#FFD4B2] to-[#C27F52] border border-[#FFF5EB]/30 shadow-xl"
+            className="absolute left-1/2 -translate-x-1/2 w-[256px] sm:w-[296px] h-5 rounded-full bg-gradient-to-r from-[#C27F52] via-[#FFD4B2] to-[#C27F52] border border-[#FFF5EB]/30 shadow-xl"
             style={{ bottom: '0px' }}
           >
             <div className="absolute inset-x-4 top-0.5 h-1 rounded-full bg-[#FFF5EB]/40 blur-[0.5px]" />
@@ -300,7 +320,7 @@ export function BirthdayCakeSection({
 
           {/* CAKE TIER 1 (Bottom Velvet Layer) */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 w-60 sm:w-66 rounded-2xl bg-gradient-to-r from-[#942C4B] via-[#BD446A] to-[#942C4B] border-t border-[#FFD4B2]/40 shadow-lg overflow-hidden"
+            className="absolute left-1/2 -translate-x-1/2 w-[224px] sm:w-[260px] rounded-2xl bg-gradient-to-r from-[#942C4B] via-[#BD446A] to-[#942C4B] border-t border-[#FFD4B2]/40 shadow-lg overflow-hidden"
             style={{ bottom: '16px', height: '68px' }}
           >
             {/* Scalloped Buttercream Frosting */}
@@ -325,7 +345,7 @@ export function BirthdayCakeSection({
 
           {/* CAKE TIER 2 (Middle Peach Layer) */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 w-48 sm:w-52 rounded-2xl bg-gradient-to-r from-[#D67462] via-[#FBB3BF] to-[#D67462] border-t border-[#FFF5EB]/50 shadow-md overflow-hidden"
+            className="absolute left-1/2 -translate-x-1/2 w-[176px] sm:w-[204px] rounded-2xl bg-gradient-to-r from-[#D67462] via-[#FBB3BF] to-[#D67462] border-t border-[#FFF5EB]/50 shadow-md overflow-hidden"
             style={{ bottom: '78px', height: '54px' }}
           >
             {/* Buttercream drops */}
@@ -342,7 +362,7 @@ export function BirthdayCakeSection({
 
           {/* CAKE TIER 3 (Top Pastel Butter Layer) */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 w-36 sm:w-40 rounded-xl bg-gradient-to-r from-[#EFEAA8] via-[#FFF9DC] to-[#EFEAA8] border-t border-white shadow-md"
+            className="absolute left-1/2 -translate-x-1/2 w-[128px] sm:w-[152px] rounded-xl bg-gradient-to-r from-[#EFEAA8] via-[#FFF9DC] to-[#EFEAA8] border-t border-white shadow-md"
             style={{ bottom: '126px', height: '46px' }}
           >
             {/* Strawberry Rosettes on the top surface */}
@@ -358,7 +378,7 @@ export function BirthdayCakeSection({
 
           {/* CANDLES - Planted directly into top of Cake Tier 3 (seated at bottom: 168px) */}
           <div
-            className="absolute inset-x-0 flex justify-center items-end gap-9 z-20 pointer-events-auto"
+            className="absolute inset-x-0 flex justify-center items-end gap-6 sm:gap-9 z-20 pointer-events-auto"
             style={{ bottom: '168px' }}
           >
             {[0, 1, 2].map((candleIndex) => {
@@ -420,6 +440,23 @@ export function BirthdayCakeSection({
             })}
           </div>
 
+          {/* Floating Sparkling Hearts when candles are blown out */}
+          {cakeHearts.map((h) => (
+            <div
+              key={h.id}
+              className="absolute pointer-events-none z-30 font-serif leading-none select-none animate-[heart-sparkle-float_1.8s_ease-out_forwards]"
+              style={{
+                left: `${h.x}%`,
+                bottom: `${h.y}px`,
+                color: h.color,
+                fontSize: `${h.size}px`,
+                filter: `drop-shadow(0 0 8px ${h.color}aa)`,
+              }}
+            >
+              ♥
+            </div>
+          ))}
+
           {/* VINTAGE LIGHTER COMPONENT */}
           {lighterState.visible && (
             <div
@@ -468,19 +505,20 @@ export function BirthdayCakeSection({
         </div>
 
         {/* INTERACTION BUTTONS - Clean, mobile-friendly spacing */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-5">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-5 w-full max-w-sm mx-auto">
           {!allCandlesOut ? (
             <button
-              className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#FFD4B2] to-[#FBB3BF] text-[#24101B] font-mono text-xs font-semibold tracking-widest uppercase hover:scale-102 active:scale-98 transition-transform shadow-md"
+              className="w-full sm:w-auto min-h-[48px] px-8 py-3.5 rounded-full bg-gradient-to-r from-[#FFD152] via-[#FFB074] to-[#FF4B7E] text-[#1D0817] font-mono text-xs font-bold tracking-widest uppercase hover:scale-102 active:scale-98 transition-all shadow-[0_6px_24px_rgba(255,75,126,0.35)] flex items-center justify-center gap-2 cursor-pointer"
               type="button"
               data-testid="button-make-wish"
               onClick={handleBlowAll}
             >
-              ✦ Tap to blow out candles
+              <span className="text-sm">🎂</span>
+              <span>Tap to blow out candles</span>
             </button>
           ) : (
             <button
-              className={`px-6 py-3 rounded-full bg-gradient-to-r from-[#F2EEB6] via-[#FFD4B2] to-[#FBB3BF] text-[#24101B] font-mono text-xs font-bold tracking-widest uppercase hover:scale-102 active:scale-98 transition-transform shadow-lg flex items-center gap-2 ${
+              className={`w-full sm:w-auto min-h-[48px] px-8 py-3.5 rounded-full bg-gradient-to-r from-[#FFE680] via-[#FFD152] to-[#FFB074] text-[#1D0817] font-mono text-xs font-bold tracking-widest uppercase hover:scale-102 active:scale-98 transition-all shadow-[0_8px_30px_rgba(255,209,82,0.4)] flex items-center justify-center gap-2 cursor-pointer ${
                 isRelighting ? 'opacity-70 cursor-not-allowed' : ''
               }`}
               type="button"
@@ -488,9 +526,9 @@ export function BirthdayCakeSection({
               disabled={isRelighting}
               onClick={handleLightAgainWithLighter}
             >
-              <span>🔥</span>
+              <span className="text-base">🔥</span>
               <span>
-                {isRelighting ? 'Lighting each candle…' : 'Light again ✦ Bring the lighter'}
+                {isRelighting ? 'Lighting each candle…' : 'Light again ✦ Bring lighter'}
               </span>
             </button>
           )}

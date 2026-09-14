@@ -1,3 +1,5 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+  <rect width="180" height="180" rx="42" fill="#24101B"/>
+  <path d="M90 148l-9.8-8.9C45.4 107.8 22 86.8 22 61c0-20.9 16.4-37 37.3-37 11.8 0 23.2 5.5 30.7 14.2C97.5 29.5 108.9 24 120.7 24 141.6 24 158 40.1 158 61c0 25.8-23.4 46.8-58.2 78.2L90 148z" fill="#FF4B7E"/>
+  <text x="90" y="78" font-family="serif" font-size="44" font-weight="bold" font-style="italic" fill="#FFF5EB" text-anchor="middle" dominant-baseline="central">M</text>
 </svg>

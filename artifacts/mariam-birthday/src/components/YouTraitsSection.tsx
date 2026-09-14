@@ -31,8 +31,8 @@ export const traitsList: TraitItem[] = [
     metricLabel: 'Radiance & Presence',
     metricValue: '99.9%',
     fillPercent: 100,
-    colorHex: '#FBB3BF',
-    glowColor: 'rgba(251, 179, 191, 0.45)',
+    colorHex: '#FF4B7E',
+    glowColor: 'rgba(255, 75, 126, 0.45)',
   },
   {
     id: 'kind',
@@ -47,8 +47,8 @@ export const traitsList: TraitItem[] = [
     metricLabel: 'Instinctive Empathy',
     metricValue: '100%',
     fillPercent: 100,
-    colorHex: '#FFD4B2',
-    glowColor: 'rgba(255, 212, 178, 0.45)',
+    colorHex: '#FFB074',
+    glowColor: 'rgba(255, 176, 116, 0.45)',
   },
   {
     id: 'lovely',
@@ -63,8 +63,8 @@ export const traitsList: TraitItem[] = [
     metricLabel: 'Contagious Joy',
     metricValue: 'Infinite',
     fillPercent: 100,
-    colorHex: '#F2EEB6',
-    glowColor: 'rgba(242, 238, 182, 0.5)',
+    colorHex: '#FFD152',
+    glowColor: 'rgba(255, 209, 82, 0.5)',
   },
   {
     id: 'intelligent',
@@ -79,8 +79,8 @@ export const traitsList: TraitItem[] = [
     metricLabel: 'Wit & Perception',
     metricValue: '99.8%',
     fillPercent: 100,
-    colorHex: '#FBE1D5',
-    glowColor: 'rgba(251, 225, 213, 0.55)',
+    colorHex: '#FFE680',
+    glowColor: 'rgba(255, 230, 128, 0.5)',
   },
   {
     id: 'caring',
@@ -95,8 +95,8 @@ export const traitsList: TraitItem[] = [
     metricLabel: 'Heart & Loyalty',
     metricValue: '100%',
     fillPercent: 100,
-    colorHex: '#EDA5A7',
-    glowColor: 'rgba(237, 165, 167, 0.5)',
+    colorHex: '#F85E87',
+    glowColor: 'rgba(248, 94, 135, 0.5)',
   },
   {
     id: 'radiant',
@@ -111,8 +111,8 @@ export const traitsList: TraitItem[] = [
     metricLabel: 'Magnetic Charm',
     metricValue: 'Celestial',
     fillPercent: 100,
-    colorHex: '#FFD4B2',
-    glowColor: 'rgba(255, 212, 178, 0.5)',
+    colorHex: '#FF7A9E',
+    glowColor: 'rgba(255, 122, 158, 0.5)',
   },
 ];
 
@@ -121,9 +121,14 @@ interface FloatingHeart {
   x: number;
   y: number;
   color: string;
+  size: number;
+  dx: number;
+  dx2: number;
+  rot: number;
+  rot2: number;
 }
 
-export function YouTraitsSection() {
+export function YouTraitsSection({ onSendLove }: { onSendLove?: () => void }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [loveCount, setLoveCount] = useState(128);
   const [hearts, setHearts] = useState<FloatingHeart[]>([]);
@@ -137,24 +142,31 @@ export function YouTraitsSection() {
   const handleSendLove = (e: React.MouseEvent<HTMLButtonElement>) => {
     setLoveCount((prev) => prev + 1);
     playChime((activeIdx + 2) % 6);
+    onSendLove?.();
 
     const rect = e.currentTarget.getBoundingClientRect();
-    const newHeart: FloatingHeart = {
-      id: Date.now() + Math.random(),
-      x: e.clientX - rect.left + (Math.random() * 40 - 20),
-      y: e.clientY - rect.top,
-      color: currentTrait.colorHex,
-    };
-    setHearts((prev) => [...prev.slice(-12), newHeart]);
-  };
+    const clickX = e.clientX ? e.clientX - rect.left : rect.width / 2;
+    const clickY = e.clientY ? e.clientY - rect.top : rect.height / 2;
 
-  useEffect(() => {
-    if (hearts.length === 0) return;
-    const timer = setTimeout(() => {
-      setHearts((prev) => prev.slice(1));
-    }, 1800);
-    return () => clearTimeout(timer);
-  }, [hearts]);
+    const palette = [currentTrait.colorHex, '#FF4B7E', '#FFB074', '#FFD152', '#F85E87'];
+    const newBatch: FloatingHeart[] = Array.from({ length: 4 }).map((_, i) => ({
+      id: Date.now() + Math.random() + i,
+      x: clickX + (Math.random() * 50 - 25),
+      y: clickY,
+      color: palette[Math.floor(Math.random() * palette.length)],
+      size: 16 + Math.random() * 12,
+      dx: (Math.random() - 0.5) * 50,
+      dx2: (Math.random() - 0.5) * 80,
+      rot: (Math.random() - 0.5) * 40,
+      rot2: (Math.random() - 0.5) * 60,
+    }));
+
+    setHearts((prev) => [...prev.slice(-16), ...newBatch]);
+
+    setTimeout(() => {
+      setHearts((prev) => prev.filter((h) => !newBatch.some((nb) => nb.id === h.id)));
+    }, 1900);
+  };
 
   return (
     <section className="traits-scene" id="you" aria-labelledby="you-heading">
@@ -262,43 +274,53 @@ export function YouTraitsSection() {
           <div className="trait-metric-block">
             <div className="trait-metric-label">Observation Record</div>
             <div className="text-sm font-medium opacity-90 leading-relaxed text-[#4A2433]">
-              Consistently verified across every memory, laughter, and moment shared together.
+              Consistently verified and treasured by Arsany across every memory, laughter, and moment shared together.
             </div>
           </div>
 
-          <button
-            type="button"
-            className="trait-heart-btn relative overflow-hidden"
-            data-testid="button-send-love"
-            onClick={handleSendLove}
-            style={{
-              background: `linear-gradient(135deg, ${currentTrait.colorHex}, #FBE1D5)`,
-            }}
-          >
-            <div className="trait-heart-left">
-              <span className="trait-heart-icon" aria-hidden="true">♥</span>
-              <div>
-                <div className="trait-heart-title">Celebrate This</div>
-                <div className="trait-heart-desc">Tap to send birthday love</div>
+          <div className="relative">
+            <button
+              type="button"
+              className="trait-heart-btn w-full relative"
+              data-testid="button-send-love"
+              onClick={handleSendLove}
+              style={{
+                background: `linear-gradient(135deg, ${currentTrait.colorHex}, #FBE1D5)`,
+              }}
+            >
+              <div className="trait-heart-left">
+                <span className="trait-heart-icon text-[#E6396E]" aria-hidden="true">♥</span>
+                <div>
+                  <div className="trait-heart-title">Celebrate This</div>
+                  <div className="trait-heart-desc">Tap to send birthday love</div>
+                </div>
               </div>
-            </div>
-            <div className="trait-heart-count">{loveCount}</div>
+              <div className="trait-heart-count">{loveCount}</div>
+            </button>
 
-            {/* Floating Particle Hearts */}
+            {/* Floating Particle Hearts bursting freely into view */}
             {hearts.map((h) => (
               <span
                 key={h.id}
-                className="absolute pointer-events-none text-xl select-none animate-ping"
+                className="absolute pointer-events-none select-none font-serif leading-none"
                 style={{
-                  left: h.x,
-                  top: h.y,
+                  left: `${h.x}px`,
+                  top: `${h.y}px`,
                   color: h.color,
+                  fontSize: `${h.size}px`,
+                  animation: 'trait-heart-float 1.8s ease-out forwards',
+                  ['--dx' as string]: `${h.dx}px`,
+                  ['--dx2' as string]: `${h.dx2}px`,
+                  ['--rot' as string]: `${h.rot}deg`,
+                  ['--rot2' as string]: `${h.rot2}deg`,
+                  filter: `drop-shadow(0 0 6px ${h.color}88)`,
+                  zIndex: 30,
                 }}
               >
                 ♥
               </span>
             ))}
-          </button>
+          </div>
         </div>
       </div>
     </section>

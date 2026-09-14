@@ -1,12 +1,17 @@
-import { type ReactNode, useEffect, useState, useCallback } from 'react';
+import { type ReactNode, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import DomeGallery from '@/components/DomeGallery';
+import InfiniteSpiral from '@/components/InfiniteSpiral';
 import { YouTraitsSection } from '@/components/YouTraitsSection';
 import { BirthdayCakeSection } from '@/components/BirthdayCakeSection';
 import { CelebrationConfetti, AmbientFloatingBalloons } from '@/components/CelebrationConfetti';
+import {
+  AmbientFloatingHearts,
+  ClickHeartExplosion,
+} from '@/components/HeartAnimations';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import {
@@ -99,100 +104,193 @@ function useReveal() {
 }
 
 function useScrollMotion() {
-  useEffect(() => {
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      const scrollY = window.scrollY;
-      document.documentElement.style.setProperty('--page-scroll', `${scrollY}px`);
-      document.documentElement.style.setProperty(
-        '--hero-shift',
-        `${Math.min(scrollY * 0.08, 72)}px`
-      );
-      document.documentElement.style.setProperty(
-        '--hero-shift-small',
-        `${Math.min(scrollY * 0.035, 28)}px`
-      );
-    };
-    const onScroll = () => {
-      if (!frame) frame = window.requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, []);
+  // Disabled to eliminate document-wide style invalidation on scroll for buttery smooth 60fps
 }
 
 function Intro({ onEnter }: { onEnter: () => void }) {
   const [gone, setGone] = useState(false);
+
+  const requestFullscreenMode = () => {
+    try {
+      const docEl = document.documentElement as any;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
+    } catch {
+      // Graceful fallback
+    }
+  };
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setGone(true);
       onEnter();
-    }, 2400);
+    }, 3800);
     return () => window.clearTimeout(timer);
   }, [onEnter]);
 
   const handleStepInside = () => {
     playChime(1);
+    requestFullscreenMode();
     setGone(true);
     onEnter();
   };
 
   return (
-    <div className={`intro-screen ${gone ? 'is-gone' : ''}`} aria-hidden={gone}>
+    <div
+      className={`intro-screen ${gone ? 'is-gone' : ''}`}
+      aria-hidden={gone}
+      onClick={handleStepInside}
+    >
       <div className="intro-orb" />
       <div className="intro-copy">
-        <div className="eyebrow intro-note">A small world, for one person</div>
-        <div className="serif">Mariam</div>
+        <div className="eyebrow intro-note">A birthday world, for one person</div>
+        <div className="serif flex items-center justify-center gap-2">
+          <span>Mariam</span>
+          <span className="text-3xl text-[#FF4B7E] animate-[heart-pulse-glow_1.4s_infinite]" aria-hidden="true">♥</span>
+        </div>
         <button
-          className="intro-action"
+          className="intro-action flex items-center gap-2 mx-auto cursor-pointer"
           data-testid="button-enter-experience"
-          onClick={handleStepInside}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleStepInside();
+          }}
         >
-          Step inside
+          <span>✦ Step inside · Enter Fullscreen</span>
+          <span className="text-xs opacity-75">⛶</span>
         </button>
+        <p className="text-[11px] font-mono text-[#FFD4B2]/70 mt-3 tracking-widest uppercase">
+          Tap anywhere to begin in full screen
+        </p>
       </div>
     </div>
   );
 }
 
-function AccordionInstallation() {
-  const [active, setActive] = useState(0);
+function SpiralGalleryInstallation() {
+  const [selectedItem, setSelectedItem] = useState<{
+    src: string;
+    alt?: string;
+    title?: string;
+    subtitle?: string;
+  } | null>(null);
 
-  const handlePanelClick = (index: number) => {
-    setActive(index);
+  const spiralImages = useMemo(
+    () =>
+      [...accordionImages, ...accordionImages].map(([image, title, subtitle], idx) => ({
+        src: accordionPath(image),
+        alt: `Mariam — ${title}`,
+        title,
+        subtitle,
+        id: `spiral-mariam-${idx}`,
+      })),
+    []
+  );
+
+  const handleCardClick = (item: any, index: number) => {
     playChime(index % 6);
+    setSelectedItem(item);
   };
 
   return (
-    <div className="accordion-gallery" role="list" aria-label="Mariam's photo installation">
-      {accordionImages.map(([image, title], index) => (
-        <button
-          className={`accordion-panel ${active === index ? 'active' : ''}`}
-          key={image}
-          type="button"
-          role="listitem"
-          aria-label={`Photo of Mariam: ${title}`}
-          aria-pressed={active === index}
-          data-testid={`button-mariam-memory-${index}`}
-          onClick={() => handlePanelClick(index)}
-          onKeyDown={(event) => {
-            if (event.key === 'ArrowRight') handlePanelClick((index + 1) % accordionImages.length);
-            if (event.key === 'ArrowLeft')
-              handlePanelClick((index - 1 + accordionImages.length) % accordionImages.length);
-          }}
+    <div className="w-full max-w-5xl mx-auto px-2" role="region" aria-label="Infinite spiral of Mariam's memories">
+      <div
+        className="relative w-full h-[600px] rounded-3xl overflow-hidden border border-[#FFD4B2]/30 shadow-[0_20px_50px_rgba(30,10,22,0.4)] backdrop-blur-sm"
+        style={{
+          background: 'radial-gradient(circle at 50% 50%, rgba(45, 18, 34, 0.75) 0%, rgba(20, 8, 15, 0.95) 100%)',
+        }}
+      >
+        {/* Soft atmospheric top/bottom edge gradients */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#14060E] to-transparent z-10 pointer-events-none"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#14060E] to-transparent z-10 pointer-events-none"
+        />
+
+        {/* Ambient warm glow in center */}
+        <div
+          aria-hidden="true"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-[#FF4B7E]/15 blur-3xl pointer-events-none"
+        />
+
+        <InfiniteSpiral
+          items={spiralImages}
+          animationMode="all"
+          speed={0.55}
+          radius={175}
+          cardWidth={120}
+          cardHeight={150}
+          verticalSpacing={62}
+          perspective={1000}
+          cardRadius={14}
+          centerScale={1.25}
+          edgeBlur={6}
+          cardsPerTurn={7}
+          pauseOnHover
+          onCardClick={handleCardClick}
+        />
+
+        {/* Floating guidance badges */}
+        <div className="absolute bottom-4 inset-x-4 flex items-center justify-between pointer-events-none z-20">
+          <span className="px-3 py-1 rounded-full bg-[#1F0A19]/85 backdrop-blur-md border border-[#FF4B7E]/30 text-[#FFE680] text-[11px] font-mono tracking-wider shadow-sm">
+            ✦ Scroll or drag to spin
+          </span>
+          <span className="px-3 py-1 rounded-full bg-[#1F0A19]/85 backdrop-blur-md border border-white/20 text-[#FFF5EB] text-[11px] font-mono tracking-wider shadow-sm">
+            Tap card to view
+          </span>
+        </div>
+      </div>
+
+      {/* Romantic Lightbox Modal on card click */}
+      {selectedItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#14060F]/85 backdrop-blur-md animate-fade-in"
+          onClick={() => setSelectedItem(null)}
+          role="dialog"
+          aria-modal="true"
         >
-          <img
-            src={accordionPath(image)}
-            alt={`Mariam — ${title}`}
-            loading={index === 0 ? 'eager' : 'lazy'}
-          />
-        </button>
-      ))}
+          <div
+            className="relative max-w-sm w-full bg-gradient-to-b from-[#2D1222] to-[#180812] rounded-3xl border border-[#FFD4B2]/40 p-4 shadow-[0_25px_60px_rgba(0,0,0,0.8)] text-center animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedItem(null)}
+              aria-label="Close memory"
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 hover:bg-[#FF4B7E] text-white flex items-center justify-center text-sm font-bold transition-all cursor-pointer z-10"
+            >
+              ✕
+            </button>
+            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden border border-[#FFB074]/30 shadow-inner bg-black/40">
+              <img
+                src={selectedItem.src}
+                alt={selectedItem.alt || 'Mariam memory'}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="mt-4 px-2">
+              <h3 className="font-serif text-2xl text-[#FFF5EB] tracking-wide">
+                {selectedItem.title}
+              </h3>
+              {selectedItem.subtitle && (
+                <p className="font-serif italic text-sm text-[#FFD4B2] mt-1 opacity-90">
+                  {selectedItem.subtitle}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -233,9 +331,61 @@ function Home() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(getAudioMuted());
   const [confettiTrigger, setConfettiTrigger] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useReveal();
   useScrollMotion();
+
+  // Fullscreen tracking
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFull = Boolean(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isFull);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    try {
+      const doc = document as any;
+      const docEl = document.documentElement as any;
+      if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+        if (docEl.requestFullscreen) {
+          docEl.requestFullscreen().catch(() => {});
+        } else if (docEl.webkitRequestFullscreen) {
+          docEl.webkitRequestFullscreen();
+        } else if (docEl.mozRequestFullScreen) {
+          docEl.mozRequestFullScreen();
+        } else if (docEl.msRequestFullscreen) {
+          docEl.msRequestFullscreen();
+        }
+      } else {
+        if (doc.exitFullscreen) {
+          doc.exitFullscreen().catch(() => {});
+        } else if (doc.webkitExitFullscreen) {
+          doc.webkitExitFullscreen();
+        }
+      }
+    } catch {
+      // Fallback
+    }
+  };
 
   // Trigger confetti burst on initial mount
   useEffect(() => {
@@ -243,14 +393,22 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => {
+    let ticking = false;
+    const line = document.querySelector<HTMLElement>('.progress-line');
+    const updateProgress = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const progress = max > 0 ? window.scrollY / max : 0;
-      const line = document.querySelector<HTMLElement>('.progress-line');
       if (line) line.style.transform = `scaleX(${progress})`;
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateProgress);
+        ticking = true;
+      }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
+    updateProgress();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
@@ -277,7 +435,11 @@ function Home() {
 
   return (
     <div className={`birthday-shell grain ${galleryOpen ? 'gallery-is-open' : ''}`}>
-      {/* Full Celebration Confetti & Ambient Balloons */}
+      {/* Ambient Romantic Floating Hearts & Interactive Tap Burst System */}
+      <AmbientFloatingHearts />
+      <ClickHeartExplosion />
+
+      {/* Full Celebration Confetti & Ambient Floating Balloons */}
       <CelebrationConfetti trigger={confettiTrigger} />
       <AmbientFloatingBalloons />
 
@@ -286,21 +448,34 @@ function Home() {
         <div className="progress-line" />
       </div>
 
-      {/* Awwwards Floating Glass Capsule Header */}
+      {/* Floating Glass Capsule Header */}
       <header className="top-mark" role="banner">
         <div className="top-mark-brand">
           <span className="top-mark-symbol" aria-hidden="true">
             M
           </span>
-          <span className="top-mark-name">For Mariam</span>
+          <span className="top-mark-name">
+            <span className="sm:hidden">Mariam ♥</span>
+            <span className="hidden sm:inline">For Mariam · From Arsany</span>
+          </span>
         </div>
 
         <div className="top-mark-center">
           <span className="top-mark-dot" />
-          <span>A Private Celebration</span>
+          <span>A Birthday Celebration</span>
         </div>
 
         <div className="top-mark-controls">
+          <button
+            type="button"
+            className="fullscreen-toggle-btn"
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
+            data-testid="button-fullscreen-toggle"
+          >
+            <span>{isFullscreen ? '⛶ Exit' : '⛶ Fullscreen'}</span>
+          </button>
+
           <button
             type="button"
             className={`sound-toggle-btn ${isMuted ? 'is-muted' : ''}`}
@@ -313,7 +488,7 @@ function Home() {
               <span className="sound-bar" />
               <span className="sound-bar" />
             </div>
-            <span>{isMuted ? 'Sound: Off' : 'Sound: On'}</span>
+            <span>{isMuted ? 'Off' : 'On'}</span>
           </button>
         </div>
       </header>
@@ -330,13 +505,14 @@ function Home() {
           </div>
           <div className="hero-copy">
             <div className="hero-badge reveal">
-              <span className="text-xs">✦</span>
-              <span className="hero-kicker">A birthday letter, in scenes</span>
+              <span className="text-xs text-[#FF4B7E] animate-[heartbeat_1.4s_infinite]">♥</span>
+              <span className="hero-kicker">A birthday letter for Mariam</span>
             </div>
             <h1 className="display reveal" id="hero-heading">
               Happy
               <br />
               <span>Birthday</span>
+              <span className="inline-block text-[#FF4B7E] text-[0.65em] align-middle ml-2 animate-[heart-pulse-glow_1.6s_infinite]" aria-hidden="true">♥</span>
             </h1>
             <p className="hero-sub reveal">
               Mariam, today the whole day gets to be about you. Keep going — there is a little world
@@ -395,18 +571,21 @@ function Home() {
                 have earned a year that feels like a yes.
               </p>
               <p className="letter-sign">
-                With all my love,
+                With all my love and devotion,
                 <br />
-                someone who is very glad you exist.
+                <span className="font-serif italic text-2xl text-[#FF4B7E] inline-flex items-center gap-2 mt-1.5">
+                  Arsany
+                  <span className="text-xl text-[#FF4B7E] animate-[heart-pulse-glow_1.4s_infinite]" aria-hidden="true">♥</span>
+                </span>
               </p>
             </article>
           </div>
         </section>
 
         {/* 03 / YOU : BEAUTIFUL · KIND · LOVELY · INTELLIGENT · CARING · RADIANT */}
-        <YouTraitsSection />
+        <YouTraitsSection onSendLove={() => setConfettiTrigger((c) => c + 1)} />
 
-        {/* 04 / HER MEMORIES - ACCORDION */}
+        {/* 04 / HER MEMORIES - INFINITE SPIRAL */}
         <section className="memories-scene" aria-labelledby="memories-heading">
           <div className="memories-intro reveal">
             <div className="eyebrow section-number">04 / A portrait in moments</div>
@@ -416,12 +595,12 @@ function Home() {
               <em>memories.</em>
             </h2>
             <p>
-              A small collection of moments that deserve to be remembered. Just Mariam, exactly as
+              An infinite spiral of moments that deserve to be remembered. Just Mariam, exactly as
               she is.
             </p>
           </div>
-          <AccordionInstallation />
-          <div className="gallery-hint">Select a photograph to let it fill the room</div>
+          <SpiralGalleryInstallation />
+          <div className="gallery-hint">Drag, scroll, or hover to traverse the infinite spiral helix</div>
         </section>
 
         {/* TRANSITION BRIDGE */}
@@ -459,43 +638,48 @@ function Home() {
           </p>
         </section>
 
-        {/* 07 / YOU + MARIAM - SHARED MEMORY DOME GALLERY */}
+        {/* 07 / ARSANY + MARIAM - SHARED MEMORY DOME GALLERY */}
         <section className="shared-intro" aria-labelledby="shared-heading">
           <div className="eyebrow reveal">07 / Kept together</div>
           <h2 className="display reveal" id="shared-heading">
-            You <em>+</em>
+            Arsany{' '}
+            <span className="inline-block text-[#FF4B7E] text-[0.8em] animate-[heart-pulse-glow_1.5s_infinite] mx-1" aria-hidden="true">
+              ♥
+            </span>
             <br />
             Mariam.
           </h2>
           <p className="reveal">
             Some moments are special because of the people in them. Here are a few I would choose
-            again.
+            again and again with you.
           </p>
         </section>
         <section className="dome-scene" aria-label="Shared memory gallery">
-          <DomeGallery
-            images={sharedImages.map(([image, label]) => ({
-              src: domePath(image),
-              alt: `Mariam and me — ${label}`,
-            }))}
-            fit={0.5}
-            fitBasis="auto"
-            minRadius={520}
-            padFactor={0.2}
-            overlayBlurColor="#27141E"
-            maxVerticalRotationDeg={5}
-            dragSensitivity={20}
-            enlargeTransitionMs={350}
-            segments={35}
-            dragDampening={0.7}
-            openedImageWidth="min(82vw, 500px)"
-            openedImageHeight="min(82vw, 500px)"
-            imageBorderRadius="24px"
-            openedImageBorderRadius="28px"
-            grayscale={false}
-            onOpenChange={setGalleryOpen}
-          />
-          <div className="dome-help">
+          <div className="relative w-full h-[75vh] min-h-[540px]">
+            <DomeGallery
+              images={sharedImages.map(([image, label]) => ({
+                src: domePath(image),
+                alt: `Mariam and me — ${label}`,
+              }))}
+              fit={0.5}
+              fitBasis="auto"
+              minRadius={520}
+              padFactor={0.2}
+              overlayBlurColor="#27141E"
+              maxVerticalRotationDeg={5}
+              dragSensitivity={20}
+              enlargeTransitionMs={300}
+              segments={35}
+              dragDampening={2}
+              openedImageWidth="min(85vw, 460px)"
+              openedImageHeight="min(85vw, 460px)"
+              imageBorderRadius="24px"
+              openedImageBorderRadius="28px"
+              grayscale={false}
+              onOpenChange={setGalleryOpen}
+            />
+          </div>
+          <div className="dome-help mt-6">
             <span>Drag or swipe to move through the memories</span>
             <i aria-hidden="true" />
             <span>Tap a photograph to enlarge</span>
@@ -527,11 +711,11 @@ function Home() {
               onClick={handleSecretToggle}
             >
               <span className="text-xl leading-none" aria-hidden="true">
-                {secret ? '✨' : '🎁'}
+                {secret ? '💖' : '🎁'}
               </span>
               <span>
                 {secret
-                  ? 'Keep this part forever'
+                  ? 'Keep this part forever ♥'
                   : 'There might be one more thing… ✦ Tap to reveal'}
               </span>
               <span className="text-xs opacity-80" aria-hidden="true">
@@ -546,12 +730,23 @@ function Home() {
               You are
               <br />
               <em>the good part.</em>
+              <span className="inline-block text-[#FF4B7E] text-[0.7em] ml-3 animate-[heart-pulse-glow_1.2s_infinite]" aria-hidden="true">
+                ♥
+              </span>
             </h3>
             <p>That is the secret. That has always been the secret.</p>
             <div className="secret-rule" />
-            <div className="eyebrow">Happy birthday, Mariam</div>
+            <div className="eyebrow flex items-center justify-center gap-2">
+              <span>Happy birthday, Mariam</span>
+              <span className="text-[#FF4B7E] animate-[heartbeat_1.4s_infinite]" aria-hidden="true">♥</span>
+              <span>Always by your side, Arsany</span>
+            </div>
           </div>
-          <div className="footer-note">Made slowly · With love · For Mariam</div>
+          <div className="footer-note flex items-center justify-center gap-1.5">
+            <span>Made with all my heart</span>
+            <span className="text-[#FF4B7E] animate-[heart-pulse-glow_1.4s_infinite]" aria-hidden="true">♥</span>
+            <span>Arsany for Mariam · Happy Birthday</span>
+          </div>
         </section>
       </main>
     </div>

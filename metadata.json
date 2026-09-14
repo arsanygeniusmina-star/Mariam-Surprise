@@ -1,0 +1,8 @@
+{
+  "name": "Mariam's Birthday Celebration",
+  "description": "A mobile-first birthday celebration website for Mariam from Arsany, featuring interactive rings, dynamic photo dome gallery, and custom birthday animations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
